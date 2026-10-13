@@ -1,0 +1,625 @@
+5TH PROGRAM 
+
+a)
+expr.y
+
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+int yylex();
+void yyerror(const char *s);
+%}
+
+%token NUMBER
+
+%%
+
+expr : expr '+' expr
+     | expr '-' expr
+     | expr '*' expr
+     | expr '/' expr
+     | '(' expr ')'
+     | NUMBER
+     ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid Expression\n");
+}
+
+int main()
+{
+    printf("Enter expression: ");
+    if(yyparse() == 0)
+        printf("Valid Expression\n");
+    return 0;
+}
+
+expr.l
+
+
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[0-9]+      { return NUMBER; }
+[ \t]       ;
+\n          { return 0; }
+.           { return yytext[0]; }
+
+%%
+
+
+b)
+
+variable.y
+
+
+%{
+#include <stdio.h>
+int yylex();
+void yyerror(const char *s);
+%}
+
+%token LETTER DIGIT
+
+%%
+
+variable : LETTER
+         | LETTER chars
+         ;
+
+chars : LETTER chars
+      | DIGIT chars
+      | LETTER
+      | DIGIT
+      ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid Variable\n");
+}
+
+int main()
+{
+    printf("Enter a variable: ");
+    if(yyparse() == 0)
+        printf("Valid Variable\n");
+    return 0;
+}
+
+variable.l
+
+
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[a-zA-Z]    { return LETTER; }
+[0-9]       { return DIGIT; }
+[ \t]       ;
+\n          { return 0; }
+.           { return yytext[0]; }
+
+%%
+
+
+c)
+
+calc.y
+
+
+%{
+#include <stdio.h>
+int yylex();
+void yyerror(const char *s);
+%}
+
+%token NUMBER
+
+%left '+' '-'
+%left '*' '/'
+
+%%
+
+input : expr '\n' { printf("Result = %d\n", $1); }
+      ;
+
+expr : expr '+' expr { $$ = $1 + $3; }
+     | expr '-' expr { $$ = $1 - $3; }
+     | expr '*' expr { $$ = $1 * $3; }
+     | expr '/' expr { $$ = $1 / $3; }
+     | '(' expr ')'  { $$ = $2; }
+     | NUMBER        { $$ = $1; }
+     ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid Expression\n");
+}
+
+int main()
+{
+    printf("Enter expression: ");
+    yyparse();
+    return 0;
+}
+
+calc.l
+
+
+%{
+#include "y.tab.h"
+#include <stdlib.h>
+%}
+
+%%
+
+[0-9]+      { yylval = atoi(yytext); return NUMBER; }
+[ \t]       ;
+\n          { return '\n'; }
+.           { return yytext[0]; }
+
+%%
+
+
+6TH PROGRAM
+
+ast.y
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct node {
+    char v[20];
+    struct node *l, *r;
+} Node;
+
+Node *root;
+
+Node *create(char *v, Node *l, Node *r) {
+    Node *n = malloc(sizeof(Node));
+    strcpy(n->v, v);
+    n->l = l; n->r = r;
+    return n;
+}
+
+int yylex(void);
+void yyerror(const char *s);
+
+void draw(Node *n, int d) {
+    if (!n) return;
+    for (int i = 0; i < d; i++) printf("  ");
+    printf("%s\n", n->v);
+    if (n->l || n->r) printf("  / \\\n");
+    draw(n->l, d+1);
+    draw(n->r, d+1);
+}
+%}
+
+%union { Node *n; char *s; }
+%token <s> ID
+%type <n> E T F
+
+%%
+E : ID '=' E { $$ = root = create("=", create($1,0,0),$3); }
+  | E '+' T  { $$ = root = create("+",$1,$3); }
+  | T        { $$ = root = $1; }
+  ;
+T : T '' F  { $$ = create("",$1,$3); }
+  | F        { $$ = $1; }
+  ;
+F : '(' E ')' { $$ = $2; }
+  | ID        { $$ = create($1,0,0); }
+  ;
+%%
+
+void yyerror(const char *s) { printf("Invalid expression\n"); }
+
+int main() {
+    printf("Enter expression: ");
+    yyparse();
+    draw(root,0);
+    return 0;
+}
+
+
+ast.l
+
+%{
+#include "ast.tab.h"
+#include <string.h>
+%}
+
+%%
+[ \t\n]+ ;
+[a-zA-Z_][a-zA-Z0-9_]* {
+    yylval.s = strdup(yytext);
+    return ID;
+}
+"="  return '=';
+"+"  return '+';
+""  return '';
+"("  return '(';
+")"  return ')';
+.    printf("Invalid character\n");
+%%
+
+int yywrap() {
+    return 1;
+}
+
+7TH PROGRAM 
+
+topdown.y
+
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+int yylex(void);
+void yyerror(const char *s);
+%}
+
+%token ID
+
+%%
+
+expr : ID
+     | expr '+' ID
+     | expr '-' ID
+     ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid string\n");
+}
+
+int main()
+{
+    printf("Enter expression using id: ");
+    if (yyparse() == 0)
+        printf("Parsing successful\n");
+
+    return 0;
+}
+
+topdown.l
+
+
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[a-zA-Z]+  { return ID; }
+[+]         { return '+'; }
+[-]         { return '-'; }
+[ \t]       ;
+\n          return 0;
+.           return yytext[0];
+
+%%
+
+
+8TH PROGRAM 
+
+algebra.y 
+
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+
+int yylex();
+void yyerror(const char *s);
+%}
+
+%token NUMBER
+
+%left '+' '-'
+%left '*' '/'
+%right '^'
+
+%%
+
+input : expr '\n'
+        {
+            printf("Result = %d\n", $1);
+        }
+      ;
+
+expr : expr '+' expr
+        { $$ = $1 + $3; }
+     | expr '-' expr
+        { $$ = $1 - $3; }
+     | expr '*' expr
+        { $$ = $1 * $3; }
+     | expr '/' expr
+        { $$ = $1 / $3; }
+     | NUMBER
+        { $$ = $1; }
+     ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid expression\n");
+}
+
+int main()
+{
+    printf("Enter an expression: ");
+    yyparse();
+    return 0;
+}
+
+
+algebra.l
+
+
+%{
+#include "y.tab.h"
+#include <stdlib.h>
+%}
+
+%%
+
+[0-9]+    { yylval = atoi(yytext); return NUMBER; }
+[ \t]     ;
+\n        return '\n';
+.         return yytext[0];
+
+%%
+
+
+9TH PROGRAM 
+
+typecheck.y
+
+
+%{
+#include <stdio.h>
+#include <string.h>
+
+int yylex();
+void yyerror(const char *s);
+%}
+
+%token INT FLOAT
+
+%%
+
+expr : INT '+' INT
+       {
+           printf("Type: int\n");
+       }
+     | FLOAT '+' FLOAT
+       {
+           printf("Type: float\n");
+       }
+     | INT '+' FLOAT
+       {
+           printf("Type Error: Cannot add int and float\n");
+       }
+     | FLOAT '+' INT
+       {
+           printf("Type Error: Cannot add float and int\n");
+       }
+     ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid Expression\n");
+}
+
+int main()
+{
+    printf("Enter expression type: ");
+    yyparse();
+    return 0;
+}
+
+
+typecheck.l
+
+
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+int       { return INT; }
+float     { return FLOAT; }
+[+]       { return '+'; }
+[ \t]     ;
+\n        return 0;
+.         return yytext[0];
+
+%%
+
+
+10TH PROGRAM 
+
+stack.c
+
+
+#include <stdio.h>
+#define MAX 5
+
+int stack[MAX];
+int top = -1;
+
+void push()
+{
+    int element;
+
+    if (top == MAX - 1)
+        printf("Stack Overflow\n");
+    else
+    {
+        printf("Enter element: ");
+        scanf("%d", &element);
+        top++;
+        stack[top] = element;
+        printf("Element inserted: %d\n", element);
+    }
+}
+
+void pop()
+{
+    if (top == -1)
+        printf("Stack Underflow\n");
+    else
+    {
+        printf("Deleted element: %d\n", stack[top]);
+        top--;
+    }
+}
+
+void display()
+{
+    int i;
+
+    if (top == -1)
+        printf("Stack is empty\n");
+    else
+    {
+        printf("Stack elements:\n");
+        for (i = top; i >= 0; i--)
+            printf("%d\n", stack[i]);
+    }
+}
+
+int main()
+{
+    int choice;
+
+    printf("Stack Storage Allocation\n");
+
+    while (1)
+    {
+        printf("\n1. PUSH");
+        printf("\n2. POP");
+        printf("\n3. DISPLAY");
+        printf("\n4. EXIT");
+        printf("\nEnter choice: ");
+
+        scanf("%d", &choice);
+
+        switch (choice)
+        {
+            case 1: push(); break;
+            case 2: pop(); break;
+            case 3: display(); break;
+            case 4: return 0;
+            default: printf("Invalid choice\n");
+        }
+    }
+
+    return 0;
+}
+
+
+12TH PROGRAM 
+
+first.c
+
+#include <stdio.h>
+#include <ctype.h>
+
+char p[6][10] = {
+    "E=E+T",
+    "E=T",
+    "T=T*F",
+    "T=F",
+    "F=(E)",
+    "F=id"
+};
+
+void first(char c)
+{
+    int i;
+    char x;
+
+    if (!isupper(c))
+    {
+        printf("%c ", c);
+        return;
+    }
+
+    for (i = 0; i < 6; i++)
+    {
+        if (p[i][0] == c)
+        {
+            x = p[i][2];
+
+            if (x == c)
+                x = p[i][3];
+
+            if (x == '(')
+                printf("( ");
+
+            else if (x == 'i')
+                printf("id ");
+
+            else if (isupper(x))
+                first(x);
+        }
+    }
+}
+
+int main()
+{
+    printf("FIRST(E) = { ");
+    first('E');
+    printf("}\n");
+
+    printf("FIRST(T) = { ");
+    first('T');
+    printf("}\n");
+
+    printf("FIRST(F) = { ");
+    first('F');
+    printf("}\n");
+
+    return 0;
+}
+
+
+10th and 12th - Normal c program 
+
+vim file.c -> gcc file.c -> ./a.out
+
+for rest all programs 
+
+yacc -d file_name.y
+lex file_name.l
+gcc y.tab.c lex.yy.c -o file_name
+./file_name 
+
+ex:
+yacc -d typecheck.y
+lex typecheck.l
+gcc y.tab.c lex.yy.c -o typecheck
+./typecheck
