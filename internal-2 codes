@@ -613,12 +613,16 @@ vim file.c -> gcc file.c -> ./a.out
 
 for rest all programs 
 
+nano file_name.y
+nano file_name.l
 yacc -d file_name.y
 lex file_name.l
 gcc y.tab.c lex.yy.c -o file_name
 ./file_name 
 
 ex:
+nano typecheck.y
+nano typecheck.l
 yacc -d typecheck.y
 lex typecheck.l
 gcc y.tab.c lex.yy.c -o typecheck
